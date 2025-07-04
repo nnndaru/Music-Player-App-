@@ -32,11 +32,11 @@ const Navbar = () => {
         <Button href='/' active={pathname === '/'}>
           Assignment
         </Button>
-        <Button href='/playable' active={pathname === '/playable'}>
-          Playable Music Player
+        <Button href='/one-track' active={pathname === '/one-track'}>
+          Play a Track
         </Button>
-        <Button href='/experimental' active={pathname === '/experimental'}>
-          Experimental
+        <Button href='/playlist' active={pathname === '/playlist'}>
+          Play a Playlist
         </Button>
       </div>
     </nav>

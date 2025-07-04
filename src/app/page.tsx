@@ -20,6 +20,8 @@ const Home = () => {
   const [playerState, setPlayerState] = useState<PlayerState>('paused');
   const [progress, setProgress] = useState(0);
   const [volume, setVolume] = useState(70);
+  const [isShuffle, setIsShuffle] = useState(false);
+  const [isRepeat, setIsRepeat] = useState(false);
 
   // Event Handlers
   const togglePlayPause = () => {
@@ -264,7 +266,12 @@ const Home = () => {
           <div className='flex items-center justify-center gap-16 mb-20'>
             {/* Shuffle Button */}
             <motion.button
-              className='cursor-pointer w-36 h-36 flex items-center justify-center text-neutral-400 hover:text-white transition-colors'
+              className={`cursor-pointer w-36 h-36 flex items-center justify-center rounded-lg transition-colors ${
+                isShuffle
+                  ? 'text-white bg-neutral-700'
+                  : 'text-primary-200 hover:text-white hover:bg-neutral-700'
+              }`}
+              onClick={() => setIsShuffle((prev) => !prev)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -273,7 +280,7 @@ const Home = () => {
 
             {/* Skip Back Button */}
             <motion.button
-              className='cursor-pointer w-36 h-36 flex items-center justify-center text-neutral-400 hover:text-white transition-colors'
+              className='cursor-pointer w-36 h-36 flex items-center justify-center text-neutral-400 hover:text-white transition-colors hover:bg-neutral-700 rounded-lg'
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleSkipBack}
@@ -325,7 +332,7 @@ const Home = () => {
 
             {/* Skip Forward Button */}
             <motion.button
-              className='cursor-pointer w-36 h-36 flex items-center justify-center text-neutral-400 hover:text-white transition-colors'
+              className='cursor-pointer w-36 h-36 flex items-center justify-center text-neutral-400 hover:text-white transition-colors hover:bg-neutral-700 rounded-lg'
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleSkipForward}
@@ -335,7 +342,12 @@ const Home = () => {
 
             {/* Repeat Button */}
             <motion.button
-              className='cursor-pointer w-36 h-36 flex items-center justify-center text-neutral-400 hover:text-white transition-colors'
+              className={`cursor-pointer w-36 h-36 flex items-center justify-center rounded-lg transition-colors ${
+                isRepeat
+                  ? 'text-white bg-neutral-700'
+                  : 'text-primary-200 hover:text-white hover:bg-neutral-700'
+              }`}
+              onClick={() => setIsRepeat((prev) => !prev)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
