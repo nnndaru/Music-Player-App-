@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play,
@@ -9,17 +10,18 @@ import {
   Shuffle,
   Repeat,
   Volume2,
-  Music,
   Pause,
 } from 'lucide-react';
 
 type PlayerState = 'playing' | 'paused' | 'loading';
 
 const Home = () => {
+  // State Management
   const [playerState, setPlayerState] = useState<PlayerState>('paused');
   const [progress, setProgress] = useState(0);
   const [volume, setVolume] = useState(70);
 
+  // Event Handlers
   const togglePlayPause = () => {
     const nextState = playerState === 'playing' ? 'paused' : 'playing';
     setPlayerState('loading');
@@ -38,6 +40,13 @@ const Home = () => {
     setPlayerState('paused');
   };
 
+  const handleProgressBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percent = clickX / rect.width;
+    setProgress(percent * 100);
+  };
+
   // Simulate progress when playing
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -49,20 +58,19 @@ const Home = () => {
     return () => clearInterval(interval);
   }, [playerState]);
 
-  // Container variants for background and shadow animations
+  // Container variants
   const containerVariants = {
     playing: {
-      background: '#0f0f0f',
-      boxShadow:
-        '0 -20px 100px rgba(163, 75, 250, 0.2 ),0 20px 200px rgba(220, 50, 250, 0.5)',
+      background: '#1a1a1a',
+      boxShadow: '0 0 50px rgba(139, 92, 246, 0.3)',
     },
     paused: {
       background: '#0f0f0f',
-      boxShadow: '0 10px 30px rgba(220, 114, 250, 0.2)',
+      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
     },
     loading: {
       background: '#0f0f0f',
-      boxShadow: '0 10px 30px rgba(220, 114, 250, 0.2)',
+      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
     },
   };
 
@@ -71,27 +79,91 @@ const Home = () => {
     playing: {
       backgroundColor: '#7C3AED',
       scale: 1,
-      transition: { duration: 0.3 },
+      transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
     },
     paused: {
       backgroundColor: '#7C3AED',
       scale: 1,
-      transition: { duration: 0.3 },
+      transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
     },
     loading: {
       backgroundColor: '#717680',
       scale: 1,
+      transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
+    },
+  };
+
+  // Album artwork variants
+  const albumArtworkVariants = {
+    playing: {
+      scale: 1,
+      opacity: 1,
+      rotate: 360,
+      transition: {
+        scale: { type: 'spring' as const, stiffness: 300, damping: 30 },
+        opacity: { duration: 0.3 },
+        rotate: { repeat: Infinity, duration: 20, ease: 'linear' as const },
+      },
+    },
+    paused: {
+      scale: 0.95,
+      opacity: 1,
+      rotate: 0,
+      transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
+    },
+    loading: {
+      scale: 0.9,
+      opacity: 0.5,
+      rotate: 0,
+      transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
+    },
+  };
+
+  // Equalizer bar variants
+  const equalizerBarVariants = {
+    playing: {
+      scaleY: [0.2, 1, 0.2],
+      opacity: 1,
+      transition: {
+        scaleY: {
+          duration: 0.5,
+          ease: 'easeInOut' as const,
+          repeat: Infinity,
+          repeatType: 'reverse' as const,
+        },
+        opacity: { duration: 0.3 },
+      },
+    },
+    paused: {
+      scaleY: 0.2,
+      opacity: 1,
+      transition: { duration: 0.3, ease: 'easeOut' as const },
+    },
+    loading: {
+      scaleY: 0.5,
+      opacity: 0.5,
+      transition: { duration: 0.3, ease: 'easeOut' as const },
+    },
+  };
+
+  // Progress bar variants
+  const progressBarVariants = {
+    playing: {
+      backgroundColor: '#a872fa',
+      transition: { duration: 0.3 },
+    },
+    paused: {
+      backgroundColor: '#717680',
+      transition: { duration: 0.3 },
+    },
+    loading: {
+      backgroundColor: '#717680',
       transition: { duration: 0.3 },
     },
   };
 
-  // For pulsing boxShadow in playing state
-  const playingBoxShadows = [
-    '0 10px 30px rgba(220, 114, 250, 0.2), 0 -20px 70px rgba(220, 114, 250, 0.05)',
-    '0 20px 150px rgba(163, 114, 250, 0.3), 0 -20px 100px rgba(163, 114, 250, 0.1)',
-  ];
-
   return (
+    // Main Container
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -100,76 +172,37 @@ const Home = () => {
     >
       <div className='flex-1 flex items-center justify-center w-full'>
         <motion.div
-          className='sm:w-500 sm:h-350 rounded-2xl p-24 relative overflow-hidden '
+          className='sm:w-500 sm:h-350 rounded-2xl p-24 relative overflow-hidden'
           initial={{}}
           animate={{
             background: containerVariants[playerState].background,
-            boxShadow:
-              playerState === 'playing'
-                ? playingBoxShadows
-                : containerVariants[playerState].boxShadow,
+            boxShadow: containerVariants[playerState].boxShadow,
           }}
-          transition={
-            playerState === 'playing'
-              ? {
-                  boxShadow: {
-                    duration: 1.2,
-                    repeat: Infinity,
-                    repeatType: 'reverse',
-                    ease: 'easeInOut',
-                  },
-                  background: { duration: 0.3, ease: 'easeInOut' },
-                }
-              : { duration: 0.3, ease: 'easeInOut' }
-          }
+          transition={{
+            duration: 0.3,
+            ease: 'easeInOut',
+          }}
         >
           {/* Album Artwork */}
-          <div className='flex items-start gap-16 mb-20'>
+          <div className='flex items-start gap-16 mb-12'>
             <motion.div
               className='w-80 h-80 sm:w-120 sm:h-120 rounded-sm sm:rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center relative overflow-hidden'
-              animate={{
-                scale:
-                  playerState === 'playing'
-                    ? 1
-                    : playerState === 'paused'
-                    ? 0.95
-                    : 0.9,
-                opacity: playerState === 'loading' ? 0.5 : 1,
-              }}
-              transition={{
-                duration: 0.3,
-                type: 'spring',
-                stiffness: 300,
-                damping: 30,
-              }}
+              variants={albumArtworkVariants}
+              animate={playerState}
+              style={{ willChange: 'transform, opacity' }}
             >
-              <motion.div
-                animate={
-                  playerState === 'playing' ? { rotate: 360 } : { rotate: 0 }
-                }
-                transition={
-                  playerState === 'playing'
-                    ? {
-                        repeat: Infinity,
-                        duration: 20,
-                        ease: 'linear',
-                      }
-                    : {
-                        duration: 0.3,
-                        ease: 'easeOut',
-                      }
-                }
-                style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  height: '100%',
-                }}
-              >
-                <Music className='sm:w-48 sm:h-48 text-white' />
-              </motion.div>
+              <div className='flex justify-center items-center h-full'>
+                <Image
+                  src='/album-art.png'
+                  alt='Album Artwork'
+                  width={192}
+                  height={192}
+                  className='sm:w-48 sm:h-48 w-32 h-32 object-cover rounded-lg'
+                />
+              </div>
             </motion.div>
 
+            {/* Title and Artist */}
             <div className='flex-1 pt-8'>
               <h2 className='text-sm sm:text-lg font-semibold text-white sm:mb-4 sm:mt-20'>
                 Awesome Song Title
@@ -177,57 +210,45 @@ const Home = () => {
               <p className='text-xs sm:text-sm text-neutral-400'>
                 Amazing Artist
               </p>
+
               {/* Equalizer Bars */}
-              <div className='flex items-end gap-4 h-32 mb-5 mt-20'>
+              <motion.div
+                className='flex items-end gap-4 h-32 mb-10 mt-20'
+                transition={{
+                  staggerChildren: playerState === 'playing' ? 0.1 : 0,
+                }}
+                animate={playerState}
+              >
                 {[0, 1, 2, 3, 4].map((index) => (
                   <motion.div
                     key={index}
-                    className='bg-primary-200'
-                    style={{ minHeight: '20%', width: 8 }}
-                    animate={
-                      playerState === 'playing'
-                        ? { height: ['20%', '100%', '20%'] }
-                        : playerState === 'paused'
-                        ? { height: '20%' }
-                        : { height: '50%', opacity: 0.5 }
-                    }
-                    transition={
-                      playerState === 'playing'
-                        ? {
-                            duration: 0.5,
-                            ease: 'easeInOut',
-                            repeat: Number.POSITIVE_INFINITY,
-                            repeatType: 'reverse' as const,
-                            delay: index * 0.1,
-                          }
-                        : {
-                            duration: 0.3,
-                            ease: 'easeOut',
-                            delay: 0,
-                          }
-                    }
+                    className='bg-primary-200 origin-bottom w-8 h-32'
+                    variants={equalizerBarVariants}
+                    style={{ willChange: 'transform, opacity' }}
                   />
                 ))}
-              </div>
+              </motion.div>
             </div>
           </div>
 
           {/* Progress Bar */}
-          <div className='mb-16'>
-            <div className='w-full h-8 bg-neutral-800 rounded-full overflow-hidden mb-8'>
+          <div>
+            <div
+              className='w-full h-8 bg-neutral-800 rounded-full overflow-hidden mb-12 cursor-pointer'
+              onClick={handleProgressBarClick}
+            >
               <motion.div
                 className='h-full rounded-full'
                 style={{
-                  background: playerState === 'playing' ? '#a872fa' : '#717680',
                   width: `${progress}%`,
+                  willChange: 'background-color',
                 }}
-                animate={{
-                  background: playerState === 'playing' ? '#a872fa' : '#535862',
-                }}
-                transition={{ duration: 0.3 }}
+                variants={progressBarVariants}
+                animate={playerState}
               />
             </div>
 
+            {/* Time Display */}
             <div className='flex justify-between text-xs text-neutral-400'>
               <span>
                 {Math.floor(((progress / 100) * 225) / 60)}:
@@ -241,25 +262,28 @@ const Home = () => {
 
           {/* Control Buttons */}
           <div className='flex items-center justify-center gap-16 mb-20'>
+            {/* Shuffle Button */}
             <motion.button
-              className='cursor-pointer w-32 h-32 flex items-center justify-center text-neutral-400 hover:text-white transition-colors'
+              className='cursor-pointer w-36 h-36 flex items-center justify-center text-neutral-400 hover:text-white transition-colors'
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Shuffle className='w-16 h-16' />
+              <Shuffle className='w-20 h-20' />
             </motion.button>
 
+            {/* Skip Back Button */}
             <motion.button
-              className='cursor-pointer w-32 h-32 flex items-center justify-center text-neutral-400 hover:text-white transition-colors'
+              className='cursor-pointer w-36 h-36 flex items-center justify-center text-neutral-400 hover:text-white transition-colors'
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleSkipBack}
             >
-              <SkipBack className='w-16 h-16' />
+              <SkipBack className='w-20 h-20' />
             </motion.button>
 
+            {/* Play/Pause Button */}
             <motion.button
-              className='cursor-pointer w-48 h-48 rounded-full flex items-center justify-center text-white disabled:opacity-50'
+              className='cursor-pointer w-56 h-56 rounded-full flex items-center justify-center text-white disabled:opacity-50'
               variants={playButtonVariants}
               animate={playerState}
               onClick={togglePlayPause}
@@ -299,31 +323,33 @@ const Home = () => {
               </AnimatePresence>
             </motion.button>
 
+            {/* Skip Forward Button */}
             <motion.button
-              className='cursor-pointer w-32 h-32 flex items-center justify-center text-neutral-400 hover:text-white transition-colors'
+              className='cursor-pointer w-36 h-36 flex items-center justify-center text-neutral-400 hover:text-white transition-colors'
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleSkipForward}
             >
-              <SkipForward className='w-16 h-16' />
+              <SkipForward className='w-20 h-20' />
             </motion.button>
 
+            {/* Repeat Button */}
             <motion.button
-              className='cursor-pointer w-32 h-32 flex items-center justify-center text-neutral-400 hover:text-white transition-colors'
+              className='cursor-pointer w-36 h-36 flex items-center justify-center text-neutral-400 hover:text-white transition-colors'
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Repeat className='w-16 h-16' />
+              <Repeat className='w-20 h-20' />
             </motion.button>
           </div>
 
           {/* Volume Control */}
           <div className='flex items-center gap-12'>
-            <Volume2 className='w-16 h-16 text-neutral-400' />
+            <Volume2 className='w-20 h-20 text-neutral-400' />
             <div className='flex-1 relative group'>
-              <div className='w-full h-4 bg-neutral-700 rounded-full overflow-hidden'>
+              <div className='w-full h-4 bg-neutral-800 rounded-full overflow-hidden'>
                 <motion.div
-                  className='h-full rounded-full bg-neutral-500 group-hover:bg-primary-200 transition-colors duration-200'
+                  className='h-full rounded-full bg-neutral-400 group-hover:bg-primary-200 transition-colors duration-200'
                   style={{ width: `${volume}%` }}
                 />
               </div>

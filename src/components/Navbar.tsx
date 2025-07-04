@@ -32,8 +32,11 @@ const Navbar = () => {
         <Button href='/' active={pathname === '/'}>
           Assignment
         </Button>
+        <Button href='/playable' active={pathname === '/playable'}>
+          Playable Music Player
+        </Button>
         <Button href='/experimental' active={pathname === '/experimental'}>
-          Try this out!
+          Experimental
         </Button>
       </div>
     </nav>

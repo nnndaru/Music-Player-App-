@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence, easeInOut, RepeatType } from 'framer-motion';
 import {
   Play,
@@ -264,10 +264,12 @@ const Home = () => {
 
             <div className='flex-1 pt-8'>
               <h2 className='text-sm sm:text-lg font-semibold text-white sm:mb-4 sm:mt-20'>
-                Spectrum
+                {/* Change Title Here */}
+                Kartini - Archipelago Series
               </h2>
               <p className='text-xs sm:text-sm text-neutral-400'>
-                Zedd × VALORANT
+                {/* Change Artist Here */}
+                Epic Majestic Orchestral
               </p>
               {/* Equalizer Bars */}
               <div className='flex items-end gap-4 h-32 mb-5 mt-20'>
@@ -307,7 +309,7 @@ const Home = () => {
           {/* Progress Bar */}
           <div className='mb-16'>
             <div
-              className='w-full h-8 bg-neutral-800 rounded-full overflow-hidden mb-8 s cursor-pointer'
+              className='w-full h-8 bg-neutral-800 rounded-full overflow-hidden mb-8 cursor-pointer'
               onClick={handleProgressBarClick}
             >
               <motion.div
@@ -322,7 +324,7 @@ const Home = () => {
                 transition={{ duration: 0.3 }}
               />
             </div>
-            <div className='flex justify-between text-xs text-neutral-400 sha'>
+            <div className='flex justify-between text-xs text-neutral-400'>
               <span>{formatTime(currentTime)}</span>
               <span>{formatTime(duration)}</span>
             </div>
@@ -430,7 +432,7 @@ const Home = () => {
           {/* Audio Element (hidden) */}
           <audio
             ref={audioRef}
-            src={'/Zedd × VALORANT Spectrum music.wav'}
+            src={'/Kartini - Archipelago Series - Epic Majestic Orchestral.wav'} // Change Song Path Here
             preload='auto'
             style={{ display: 'none' }}
           />
