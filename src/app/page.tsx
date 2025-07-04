@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -9,56 +9,324 @@ import {
   SkipForward,
   Shuffle,
   Repeat,
+  Repeat1,
   Volume2,
+  VolumeX,
   Pause,
 } from 'lucide-react';
 
 type PlayerState = 'playing' | 'paused' | 'loading';
 
+// Tooltip Component
+const Tooltip = ({
+  children,
+  minWidth = 'min-w-[120px]',
+}: {
+  children: React.ReactNode;
+  minWidth?: string;
+}) => (
+  <div
+    className={`absolute left-1/2 -translate-x-1/2 bottom-full mb-2 px-4 py-2 rounded bg-neutral-800 text-xs text-white opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-10 transition-opacity duration-200 text-center ${minWidth}`}
+  >
+    {children}
+  </div>
+);
+
+// Tooltip Messages
+
+const TOOLTIP_SHUFFLE = (isShuffle: boolean) =>
+  isShuffle ? 'Shuffle mode is on' : 'Shuffle mode is off';
+
+const TOOLTIP_SKIP_BACK = (currentTrackIndex: number, repeatMode: string) =>
+  repeatMode === 'one'
+    ? 'Restart current track'
+    : currentTrackIndex === 0
+    ? 'This is the first track'
+    : 'Skip to previous track';
+
+const TOOLTIP_PLAY_PAUSE = (playerState: string) =>
+  playerState === 'loading'
+    ? 'Loading...'
+    : playerState === 'playing'
+    ? 'Pause'
+    : 'Play';
+
+const TOOLTIP_SKIP_FORWARD = (
+  repeatMode: string,
+  currentTrackIndex: number,
+  playlistLength: number
+) =>
+  repeatMode === 'one'
+    ? 'Restart current track'
+    : repeatMode === 'none' && currentTrackIndex === playlistLength - 1
+    ? 'This is the last track'
+    : 'Skip to next track';
+
+const TOOLTIP_REPEAT = (repeatMode: string) => {
+  switch (repeatMode) {
+    case 'none':
+      return 'Repeat mode is off';
+    case 'all':
+      return 'Repeat all tracks';
+    case 'one':
+      return 'Repeat current track';
+    default:
+      return 'Repeat mode is off';
+  }
+};
+
 const Home = () => {
   // State Management
+
+  // Player state and refs
   const [playerState, setPlayerState] = useState<PlayerState>('paused');
   const [progress, setProgress] = useState(0);
-  const [volume, setVolume] = useState(70);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Shuffle/repeat state
   const [isShuffle, setIsShuffle] = useState(false);
-  const [isRepeat, setIsRepeat] = useState(false);
+  const [repeatMode, setRepeatMode] = useState<'none' | 'all' | 'one'>('none');
+
+  // Playlist and track state
+  const playlist = [
+    {
+      title: 'Kartini',
+      artist: 'Epic Majestic Orchestral',
+      src: '/Kartini - Archipelago Series - Epic Majestic Orchestral.wav',
+    },
+    {
+      title: 'Kasih Ibu',
+      artist: 'Ferdinand Marsa & Clarissa Tamara',
+      src: '/Kasih Ibu - Ferdinand Marsa & Clarissa Tamara.wav',
+    },
+    {
+      title: 'Laskar Pelangi',
+      artist: 'Trinity Youth Symphony Orchestra',
+      src: '/Laskar Pelangi - Trinity Youth Symphony Orchestra.wav',
+    },
+  ];
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+
+  // Volume/mute state
+  const [volume, setVolume] = useState(70);
+  const [isMuted, setIsMuted] = useState(false);
+  const [prevVolume, setPrevVolume] = useState(70);
+
+  // Volume/mute effect
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : volume / 100;
+    }
+  }, [volume, isMuted]);
+
+  // Volume/mute handlers
+  const handleMuteToggle = () => {
+    if (isMuted) {
+      setIsMuted(false);
+      setVolume(prevVolume);
+    } else {
+      setPrevVolume(volume);
+      setIsMuted(true);
+      setVolume(0);
+    }
+  };
+
+  const handleVolumeChange = (value: number) => {
+    setVolume(value);
+    if (value === 0) setIsMuted(true);
+    else setIsMuted(false);
+  };
+
+  // Progress bar drag state
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Progress bar drag handlers
+  const handleProgressUpdate = useCallback(
+    (clientX: number) => {
+      if (!audioRef.current || !duration) return;
+      const progressBar = document.querySelector(
+        '.progress-bar'
+      ) as HTMLDivElement;
+      if (!progressBar) return;
+      const rect = progressBar.getBoundingClientRect();
+      const clickX = clientX - rect.left;
+      const percent = Math.max(0, Math.min(1, clickX / rect.width));
+      const newTime = percent * duration;
+      audioRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+      setProgress(percent * 100);
+    },
+    [audioRef, duration, setCurrentTime, setProgress]
+  );
+
+  const handleProgressMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    handleProgressUpdate(e.clientX);
+  };
+
+  const handleProgressMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // Global mouse listeners for drag
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        handleProgressUpdate(e.clientX);
+      }
+    };
+
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleGlobalMouseMove);
+        document.removeEventListener('mouseup', handleGlobalMouseUp);
+      };
+    }
+  }, [isDragging, handleProgressUpdate]);
 
   // Event Handlers
+
   const togglePlayPause = () => {
-    const nextState = playerState === 'playing' ? 'paused' : 'playing';
-    setPlayerState('loading');
-    setTimeout(() => {
-      setPlayerState(nextState);
-    }, 500);
+    if (!audioRef.current) return;
+    if (playerState === 'playing') {
+      setPlayerState('loading');
+      audioRef.current.pause();
+    } else {
+      setPlayerState('loading');
+      audioRef.current.play();
+    }
   };
 
   const handleSkipBack = () => {
-    setProgress(0);
-    setPlayerState('paused');
+    if (audioRef.current) {
+      if (repeatMode === 'one') {
+        audioRef.current.currentTime = 0;
+        setCurrentTime(0);
+        setProgress(0);
+        return;
+      }
+      if (audioRef.current.currentTime > 3 || currentTrackIndex === 0) {
+        audioRef.current.currentTime = 0;
+        setCurrentTime(0);
+        setProgress(0);
+      } else {
+        setCurrentTrackIndex((prev) => Math.max(0, prev - 1));
+      }
+      setPlayerState('paused');
+      audioRef.current.pause();
+    }
   };
 
   const handleSkipForward = () => {
-    setProgress(100);
-    setPlayerState('paused');
-  };
-
-  const handleProgressBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const percent = clickX / rect.width;
-    setProgress(percent * 100);
-  };
-
-  // Simulate progress when playing
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (playerState === 'playing') {
-      interval = setInterval(() => {
-        setProgress((prev) => (prev >= 100 ? 0 : prev + 100 / 225));
-      }, 1000);
+    if (audioRef.current) {
+      if (repeatMode === 'one') {
+        audioRef.current.currentTime = 0;
+        setCurrentTime(0);
+        setProgress(0);
+        return;
+      }
+      if (isShuffle && playlist.length > 1) {
+        let nextIndex = Math.floor(Math.random() * playlist.length);
+        while (nextIndex === currentTrackIndex) {
+          nextIndex = Math.floor(Math.random() * playlist.length);
+        }
+        setCurrentTrackIndex(nextIndex);
+      } else if (currentTrackIndex < playlist.length - 1) {
+        setCurrentTrackIndex((prev) => prev + 1);
+      } else if (repeatMode === 'all') {
+        setCurrentTrackIndex(0);
+      } else {
+        audioRef.current.currentTime = duration;
+        setCurrentTime(duration);
+        setProgress(100);
+        setPlayerState('paused');
+        audioRef.current.pause();
+      }
     }
-    return () => clearInterval(interval);
-  }, [playerState]);
+  };
+
+  // Format time
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Audio event listeners
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const onTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+      setProgress(duration ? (audio.currentTime / duration) * 100 : 0);
+    };
+    const onLoadedMetadata = () => {
+      setDuration(audio.duration);
+    };
+    const onPlay = () => setPlayerState('playing');
+    const onPause = () => setPlayerState('paused');
+    const onEnded = () => {
+      if (repeatMode === 'one') {
+        audio.currentTime = 0;
+        audio.play();
+      } else if (repeatMode === 'all') {
+        if (currentTrackIndex < playlist.length - 1) {
+          setCurrentTrackIndex((prev) => prev + 1);
+        } else {
+          setCurrentTrackIndex(0);
+        }
+      } else if (isShuffle && playlist.length > 1) {
+        let nextIndex = Math.floor(Math.random() * playlist.length);
+        while (nextIndex === currentTrackIndex) {
+          nextIndex = Math.floor(Math.random() * playlist.length);
+        }
+        setCurrentTrackIndex(nextIndex);
+      } else if (currentTrackIndex < playlist.length - 1) {
+        setCurrentTrackIndex((prev) => prev + 1);
+      } else {
+        setPlayerState('paused');
+        setCurrentTime(duration);
+        setProgress(100);
+      }
+    };
+
+    audio.addEventListener('timeupdate', onTimeUpdate);
+    audio.addEventListener('loadedmetadata', onLoadedMetadata);
+    audio.addEventListener('play', onPlay);
+    audio.addEventListener('pause', onPause);
+    audio.addEventListener('ended', onEnded);
+
+    return () => {
+      audio.removeEventListener('timeupdate', onTimeUpdate);
+      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+      audio.removeEventListener('play', onPlay);
+      audio.removeEventListener('pause', onPause);
+      audio.removeEventListener('ended', onEnded);
+    };
+  }, [repeatMode, isShuffle, currentTrackIndex, duration, playlist.length]);
+
+  // Update audio src
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.src = playlist[currentTrackIndex].src;
+      setCurrentTime(0);
+      setProgress(0);
+      setDuration(0);
+      if (playerState === 'playing') {
+        audioRef.current.play();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTrackIndex]);
 
   // Container variants
   const containerVariants = {
@@ -73,25 +341,6 @@ const Home = () => {
     loading: {
       background: '#0f0f0f',
       boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
-    },
-  };
-
-  // Play/Pause button variants
-  const playButtonVariants = {
-    playing: {
-      backgroundColor: '#7C3AED',
-      scale: 1,
-      transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
-    },
-    paused: {
-      backgroundColor: '#7C3AED',
-      scale: 1,
-      transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
-    },
-    loading: {
-      backgroundColor: '#717680',
-      scale: 1,
-      transition: { type: 'spring' as const, stiffness: 300, damping: 30 },
     },
   };
 
@@ -128,7 +377,7 @@ const Home = () => {
       opacity: 1,
       transition: {
         scaleY: {
-          duration: 0.5,
+          duration: 1.2,
           ease: 'easeInOut' as const,
           repeat: Infinity,
           repeatType: 'reverse' as const,
@@ -145,22 +394,6 @@ const Home = () => {
       scaleY: 0.5,
       opacity: 0.5,
       transition: { duration: 0.3, ease: 'easeOut' as const },
-    },
-  };
-
-  // Progress bar variants
-  const progressBarVariants = {
-    playing: {
-      backgroundColor: '#a872fa',
-      transition: { duration: 0.3 },
-    },
-    paused: {
-      backgroundColor: '#717680',
-      transition: { duration: 0.3 },
-    },
-    loading: {
-      backgroundColor: '#717680',
-      transition: { duration: 0.3 },
     },
   };
 
@@ -197,20 +430,20 @@ const Home = () => {
                 <Image
                   src='/album-art.png'
                   alt='Album Artwork'
-                  width={192}
-                  height={192}
+                  width={32}
+                  height={32}
                   className='sm:w-48 sm:h-48 w-32 h-32 object-cover rounded-lg'
                 />
               </div>
             </motion.div>
 
             {/* Title and Artist */}
-            <div className='flex-1 pt-8'>
+            <div className='flex-1 pt-8 pl-12'>
               <h2 className='text-sm sm:text-lg font-semibold text-white sm:mb-4 sm:mt-20'>
-                Awesome Song Title
+                {playlist[currentTrackIndex].title}
               </h2>
               <p className='text-xs sm:text-sm text-neutral-400'>
-                Amazing Artist
+                {playlist[currentTrackIndex].artist}
               </p>
 
               {/* Equalizer Bars */}
@@ -236,133 +469,199 @@ const Home = () => {
           {/* Progress Bar */}
           <div>
             <div
-              className='w-full h-8 bg-neutral-800 rounded-full overflow-hidden mb-12 cursor-pointer'
-              onClick={handleProgressBarClick}
+              className='progress-bar w-full h-8 bg-neutral-800 rounded-full overflow-hidden mb-12 cursor-pointer select-none'
+              onMouseDown={handleProgressMouseDown}
+              onMouseUp={handleProgressMouseUp}
             >
               <motion.div
                 className='h-full rounded-full'
                 style={{
                   width: `${progress}%`,
+                  backgroundColor:
+                    playerState === 'playing' ? '#a872fa' : '#717680',
                   willChange: 'background-color',
                 }}
-                variants={progressBarVariants}
-                animate={playerState}
+                transition={{ duration: 0.3 }}
               />
             </div>
 
             {/* Time Display */}
             <div className='flex justify-between text-xs text-neutral-400'>
-              <span>
-                {Math.floor(((progress / 100) * 225) / 60)}:
-                {(Math.floor((progress / 100) * 225) % 60)
-                  .toString()
-                  .padStart(2, '0')}
-              </span>
-              <span>3:45</span>
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
             </div>
           </div>
 
           {/* Control Buttons */}
           <div className='flex items-center justify-center gap-16 mb-20'>
             {/* Shuffle Button */}
-            <motion.button
-              className={`cursor-pointer w-36 h-36 flex items-center justify-center rounded-lg transition-colors ${
-                isShuffle
-                  ? 'text-white bg-neutral-700'
-                  : 'text-primary-200 hover:text-white hover:bg-neutral-700'
-              }`}
-              onClick={() => setIsShuffle((prev) => !prev)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Shuffle className='w-20 h-20' />
-            </motion.button>
+            <div className='relative group'>
+              <motion.button
+                className={
+                  `cursor-pointer w-36 h-36 flex items-center justify-center rounded-lg transition-colors ` +
+                  (isShuffle
+                    ? 'text-primary-200 bg-neutral-900'
+                    : 'text-neutral-400 hover:text-white hover:bg-neutral-800')
+                }
+                onClick={() => setIsShuffle((prev) => !prev)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Shuffle className='w-20 h-20' />
+              </motion.button>
+              <Tooltip>{TOOLTIP_SHUFFLE(isShuffle)}</Tooltip>
+            </div>
 
             {/* Skip Back Button */}
-            <motion.button
-              className='cursor-pointer w-36 h-36 flex items-center justify-center text-neutral-400 hover:text-white transition-colors hover:bg-neutral-700 rounded-lg'
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleSkipBack}
-            >
-              <SkipBack className='w-20 h-20' />
-            </motion.button>
+            <div className='relative group'>
+              <motion.button
+                className='cursor-pointer w-36 h-36 flex items-center justify-center text-neutral-400 hover:text-white transition-colors hover:bg-neutral-700 rounded-lg'
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleSkipBack}
+              >
+                <SkipBack className='w-20 h-20' />
+              </motion.button>
+              <Tooltip>
+                {TOOLTIP_SKIP_BACK(currentTrackIndex, repeatMode)}
+              </Tooltip>
+            </div>
 
             {/* Play/Pause Button */}
-            <motion.button
-              className='cursor-pointer w-56 h-56 rounded-full flex items-center justify-center text-white disabled:opacity-50'
-              variants={playButtonVariants}
-              animate={playerState}
-              onClick={togglePlayPause}
-              disabled={playerState === 'loading'}
-              whileHover={{ scale: playerState !== 'loading' ? 1.05 : 1 }}
-              whileTap={{ scale: playerState !== 'loading' ? 0.95 : 1 }}
-            >
-              <AnimatePresence mode='wait'>
-                {playerState === 'loading' ? (
-                  <motion.div
-                    key='loading'
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className='w-20 h-20 border-2 border-white border-t-transparent rounded-full animate-spin'
-                  />
-                ) : playerState === 'playing' ? (
-                  <motion.div
-                    key='pause'
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    className='flex gap-4'
-                  >
-                    <Pause className='w-20 h-20' />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key='play'
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                  >
-                    <Play className='w-20 h-20 ml-4' />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.button>
+            <div className='relative group'>
+              <motion.button
+                className='cursor-pointer w-56 h-56 rounded-full flex items-center justify-center text-white disabled:opacity-50'
+                style={{
+                  backgroundColor:
+                    playerState === 'loading' ? '#717680' : '#632abb',
+                }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                onClick={togglePlayPause}
+                disabled={playerState === 'loading'}
+                whileHover={{ scale: playerState !== 'loading' ? 1.05 : 1 }}
+                whileTap={{ scale: playerState !== 'loading' ? 0.95 : 1 }}
+              >
+                <AnimatePresence mode='wait'>
+                  {playerState === 'loading' ? (
+                    <motion.div
+                      key='loading'
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className='w-20 h-20 border-2 border-white border-t-transparent rounded-full animate-spin'
+                    />
+                  ) : playerState === 'playing' ? (
+                    <motion.div
+                      key='pause'
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className='flex gap-4'
+                    >
+                      <Pause className='w-20 h-20' />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key='play'
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                    >
+                      <Play className='w-20 h-20 ml-4' />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+              <Tooltip minWidth='min-w-[80px]'>
+                {TOOLTIP_PLAY_PAUSE(playerState)}
+              </Tooltip>
+            </div>
 
             {/* Skip Forward Button */}
-            <motion.button
-              className='cursor-pointer w-36 h-36 flex items-center justify-center text-neutral-400 hover:text-white transition-colors hover:bg-neutral-700 rounded-lg'
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleSkipForward}
-            >
-              <SkipForward className='w-20 h-20' />
-            </motion.button>
+            <div className='relative group'>
+              <motion.button
+                className='cursor-pointer w-36 h-36 flex items-center justify-center text-neutral-400 hover:text-white transition-colors hover:bg-neutral-700 rounded-lg'
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleSkipForward}
+              >
+                <SkipForward className='w-20 h-20' />
+              </motion.button>
+              <Tooltip>
+                {TOOLTIP_SKIP_FORWARD(
+                  repeatMode,
+                  currentTrackIndex,
+                  playlist.length
+                )}
+              </Tooltip>
+            </div>
 
             {/* Repeat Button */}
-            <motion.button
-              className={`cursor-pointer w-36 h-36 flex items-center justify-center rounded-lg transition-colors ${
-                isRepeat
-                  ? 'text-white bg-neutral-700'
-                  : 'text-primary-200 hover:text-white hover:bg-neutral-700'
-              }`}
-              onClick={() => setIsRepeat((prev) => !prev)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Repeat className='w-20 h-20' />
-            </motion.button>
+            <div className='relative group'>
+              <motion.button
+                className={
+                  `cursor-pointer w-36 h-36 flex items-center justify-center rounded-lg transition-colors ` +
+                  (repeatMode !== 'none'
+                    ? 'text-primary-200 bg-neutral-900'
+                    : 'text-neutral-400 hover:text-white hover:bg-neutral-800')
+                }
+                onClick={() => {
+                  setRepeatMode((prev) => {
+                    switch (prev) {
+                      case 'none':
+                        return 'one';
+                      case 'one':
+                        return 'all';
+                      case 'all':
+                        return 'none';
+                      default:
+                        return 'none';
+                    }
+                  });
+                }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {repeatMode === 'one' ? (
+                  <Repeat1 className='w-20 h-20' />
+                ) : (
+                  <Repeat className='w-20 h-20' />
+                )}
+              </motion.button>
+              <Tooltip>{TOOLTIP_REPEAT(repeatMode)}</Tooltip>
+            </div>
           </div>
 
           {/* Volume Control */}
           <div className='flex items-center gap-12'>
-            <Volume2 className='w-20 h-20 text-neutral-400' />
+            <div className='relative group'>
+              <button
+                type='button'
+                onClick={handleMuteToggle}
+                className='focus:outline-none cursor-pointer'
+              >
+                {isMuted || volume === 0 ? (
+                  <VolumeX className='w-20 h-20 text-neutral-400' />
+                ) : (
+                  <Volume2 className='w-20 h-20 text-neutral-400' />
+                )}
+              </button>
+              <Tooltip minWidth='60px'>
+                {isMuted || volume === 0 ? 'Unmute' : 'Mute'}
+              </Tooltip>
+            </div>
             <div className='flex-1 relative group'>
               <div className='w-full h-4 bg-neutral-800 rounded-full overflow-hidden'>
                 <motion.div
                   className='h-full rounded-full bg-neutral-400 group-hover:bg-primary-200 transition-colors duration-200'
                   style={{ width: `${volume}%` }}
+                />
+                <div
+                  className='absolute top-1/2 -translate-y-1/2 h-8 w-8 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 -translate-x-1/2'
+                  style={{
+                    left: `${volume}%`,
+                  }}
                 />
               </div>
               <input
@@ -370,11 +669,19 @@ const Home = () => {
                 min='0'
                 max='100'
                 value={volume}
-                onChange={(e) => setVolume(Number(e.target.value))}
+                onChange={(e) => handleVolumeChange(Number(e.target.value))}
                 className='absolute inset-0 w-full h-full opacity-0 cursor-pointer'
               />
             </div>
           </div>
+
+          {/* Audio Element */}
+          <audio
+            ref={audioRef}
+            src={playlist[currentTrackIndex].src}
+            preload='auto'
+            style={{ display: 'none' }}
+          />
         </motion.div>
       </div>
     </motion.div>
