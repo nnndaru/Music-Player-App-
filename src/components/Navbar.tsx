@@ -17,7 +17,7 @@ const Button = ({
     className={`cursor-pointer py-4 font-extralight rounded-sm transition-colors text-xs px-12 ${
       active
         ? 'text-white bg-[#251938] shadow-lg shadow-purple-500/50'
-        : 'text-gray-200 hover:text-white  bg-[#251938]/30 hover:bg-[#251938]/90 hover:scale-105 transition-all duration-300'
+        : 'text-gray-600 hover:text-white  bg-[#251938]/30 hover:bg-[#251938]/90 hover:scale-105 transition-all duration-300'
     }`}
   >
     {children}
@@ -28,15 +28,13 @@ const Navbar = () => {
   const pathname = usePathname();
   return (
     <nav className='fixed top-0 left-0 w-full py-24 sm:py-24 sm:px-24 z-50 '>
-      <div className='flex justify-center sm:justify-start px-8 gap-8'>
+      <div className='flex justify-center md:justify-start px-8 gap-8'>
         <Button href='/' active={pathname === '/'}>
           Assignment
         </Button>
-        <Button href='/one-track' active={pathname === '/one-track'}>
-          Play a Track
-        </Button>
-        <Button href='/playlist' active={pathname === '/playlist'}>
-          Play a Playlist
+
+        <Button href='/explore' active={pathname === '/explore'}>
+          Don&apos;t Click Me!
         </Button>
       </div>
     </nav>
