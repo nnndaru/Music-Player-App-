@@ -191,9 +191,12 @@ const Home = () => {
       };
     }
   }, [isDragging, handleProgressUpdate]);
+<<<<<<< HEAD
 
   // Volume drag state
   const [isVolumeDragging, setIsVolumeDragging] = useState(false);
+=======
+>>>>>>> 3e24de9efe174884a6fb01e9986f5758292ca44a
 
   // Event Handlers
 
@@ -268,9 +271,12 @@ const Home = () => {
     const audio = audioRef.current;
     if (!audio) return;
 
+<<<<<<< HEAD
     let playTimeout: NodeJS.Timeout | null = null;
     let pauseTimeout: NodeJS.Timeout | null = null;
 
+=======
+>>>>>>> 3e24de9efe174884a6fb01e9986f5758292ca44a
     const onTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
       setProgress(duration ? (audio.currentTime / duration) * 100 : 0);
@@ -278,6 +284,7 @@ const Home = () => {
     const onLoadedMetadata = () => {
       setDuration(audio.duration);
     };
+<<<<<<< HEAD
     const onPlay = () => {
       if (playTimeout) clearTimeout(playTimeout);
       playTimeout = setTimeout(() => setPlayerState('playing'), 500);
@@ -286,6 +293,10 @@ const Home = () => {
       if (pauseTimeout) clearTimeout(pauseTimeout);
       pauseTimeout = setTimeout(() => setPlayerState('paused'), 500);
     };
+=======
+    const onPlay = () => setPlayerState('playing');
+    const onPause = () => setPlayerState('paused');
+>>>>>>> 3e24de9efe174884a6fb01e9986f5758292ca44a
     const onEnded = () => {
       if (repeatMode === 'one') {
         audio.currentTime = 0;
@@ -323,8 +334,11 @@ const Home = () => {
       audio.removeEventListener('play', onPlay);
       audio.removeEventListener('pause', onPause);
       audio.removeEventListener('ended', onEnded);
+<<<<<<< HEAD
       if (playTimeout) clearTimeout(playTimeout);
       if (pauseTimeout) clearTimeout(pauseTimeout);
+=======
+>>>>>>> 3e24de9efe174884a6fb01e9986f5758292ca44a
     };
   }, [repeatMode, isShuffle, currentTrackIndex, duration, playlist.length]);
 
@@ -444,9 +458,15 @@ const Home = () => {
                 <Image
                   src='/album-art.png'
                   alt='Album Artwork'
+<<<<<<< HEAD
                   width={60}
                   height={60}
                   className='object-contain rounded-lg'
+=======
+                  width={32}
+                  height={32}
+                  className='sm:w-48 sm:h-48 w-32 h-32 object-cover rounded-lg'
+>>>>>>> 3e24de9efe174884a6fb01e9986f5758292ca44a
                 />
               </div>
             </motion.div>
@@ -492,7 +512,11 @@ const Home = () => {
                 style={{
                   width: `${progress}%`,
                   backgroundColor:
+<<<<<<< HEAD
                     playerState === 'playing' ? '#7c3aed' : '#717680',
+=======
+                    playerState === 'playing' ? '#a872fa' : '#717680',
+>>>>>>> 3e24de9efe174884a6fb01e9986f5758292ca44a
                   willChange: 'background-color',
                 }}
                 transition={{ duration: 0.3 }}
@@ -514,13 +538,20 @@ const Home = () => {
                 className={
                   `cursor-pointer w-36 h-36 flex items-center justify-center rounded-lg transition-colors ` +
                   (isShuffle
+<<<<<<< HEAD
                     ? 'text-primary-300 bg-neutral-800'
+=======
+                    ? 'text-primary-200 bg-neutral-900'
+>>>>>>> 3e24de9efe174884a6fb01e9986f5758292ca44a
                     : 'text-neutral-400 hover:text-white hover:bg-neutral-800')
                 }
                 onClick={() => setIsShuffle((prev) => !prev)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+<<<<<<< HEAD
                 transition={{ type: 'spring', stiffness: 1000, damping: 20 }}
+=======
+>>>>>>> 3e24de9efe174884a6fb01e9986f5758292ca44a
               >
                 <Shuffle className='w-20 h-20' />
               </motion.button>
@@ -534,7 +565,10 @@ const Home = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleSkipBack}
+<<<<<<< HEAD
                 transition={{ type: 'spring', stiffness: 1000, damping: 20 }}
+=======
+>>>>>>> 3e24de9efe174884a6fb01e9986f5758292ca44a
               >
                 <SkipBack className='w-20 h-20' />
               </motion.button>
@@ -549,10 +583,17 @@ const Home = () => {
                 className='cursor-pointer w-56 h-56 rounded-full flex items-center justify-center text-white disabled:opacity-50'
                 style={{
                   backgroundColor:
+<<<<<<< HEAD
                     playerState === 'loading' ? '#717680' : '#7c3aed',
                 }}
                 animate={{ scale: 1 }}
                 transition={{ type: 'spring', stiffness: 1000, damping: 20 }}
+=======
+                    playerState === 'loading' ? '#717680' : '#632abb',
+                }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+>>>>>>> 3e24de9efe174884a6fb01e9986f5758292ca44a
                 onClick={togglePlayPause}
                 disabled={playerState === 'loading'}
                 whileHover={{ scale: playerState !== 'loading' ? 1.05 : 1 }}
@@ -601,7 +642,10 @@ const Home = () => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleSkipForward}
+<<<<<<< HEAD
                 transition={{ type: 'spring', stiffness: 1000, damping: 20 }}
+=======
+>>>>>>> 3e24de9efe174884a6fb01e9986f5758292ca44a
               >
                 <SkipForward className='w-20 h-20' />
               </motion.button>
@@ -620,7 +664,11 @@ const Home = () => {
                 className={
                   `cursor-pointer w-36 h-36 flex items-center justify-center rounded-lg transition-colors ` +
                   (repeatMode !== 'none'
+<<<<<<< HEAD
                     ? 'text-primary-300 bg-neutral-800'
+=======
+                    ? 'text-primary-200 bg-neutral-900'
+>>>>>>> 3e24de9efe174884a6fb01e9986f5758292ca44a
                     : 'text-neutral-400 hover:text-white hover:bg-neutral-800')
                 }
                 onClick={() => {
@@ -639,7 +687,10 @@ const Home = () => {
                 }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+<<<<<<< HEAD
                 transition={{ type: 'spring', stiffness: 1000, damping: 20 }}
+=======
+>>>>>>> 3e24de9efe174884a6fb01e9986f5758292ca44a
               >
                 {repeatMode === 'one' ? (
                   <Repeat1 className='w-20 h-20' />
@@ -652,12 +703,21 @@ const Home = () => {
           </div>
 
           {/* Volume Control */}
+<<<<<<< HEAD
           <div className='flex items-center gap-4 h-20'>
             <div className='relative flex items-center group h-full'>
               <button
                 type='button'
                 onClick={handleMuteToggle}
                 className='focus:outline-none cursor-pointer flex items-center h-full'
+=======
+          <div className='flex items-center gap-12'>
+            <div className='relative group'>
+              <button
+                type='button'
+                onClick={handleMuteToggle}
+                className='focus:outline-none cursor-pointer'
+>>>>>>> 3e24de9efe174884a6fb01e9986f5758292ca44a
               >
                 {isMuted || volume === 0 ? (
                   <VolumeX className='w-20 h-20 text-neutral-400' />
@@ -669,12 +729,18 @@ const Home = () => {
                 {isMuted || volume === 0 ? 'Unmute' : 'Mute'}
               </Tooltip>
             </div>
+<<<<<<< HEAD
             <div className='flex-1 relative group h-full flex items-center'>
               <div className='w-full h-4 bg-neutral-800 rounded-full overflow-hidden flex items-center'>
+=======
+            <div className='flex-1 relative group'>
+              <div className='w-full h-4 bg-neutral-800 rounded-full overflow-hidden'>
+>>>>>>> 3e24de9efe174884a6fb01e9986f5758292ca44a
                 <motion.div
                   className='h-full rounded-full bg-[#717680] group-hover:bg-primary-300 transition-colors duration-200'
                   style={{ width: `${volume}%` }}
                 />
+<<<<<<< HEAD
                 {isVolumeDragging && (
                   <div
                     className='absolute top-1/2 -translate-y-1/2 h-8 w-8 bg-white rounded-full opacity-100 transition-opacity duration-200 -translate-x-1/2'
@@ -683,6 +749,14 @@ const Home = () => {
                     }}
                   />
                 )}
+=======
+                <div
+                  className='absolute top-1/2 -translate-y-1/2 h-8 w-8 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 -translate-x-1/2'
+                  style={{
+                    left: `${volume}%`,
+                  }}
+                />
+>>>>>>> 3e24de9efe174884a6fb01e9986f5758292ca44a
               </div>
               <input
                 type='range'
