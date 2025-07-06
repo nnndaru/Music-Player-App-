@@ -74,8 +74,8 @@
 
   /* Primary Colors */
   --color-primary-100: #d3bbfa;
-  --color-primary-200: #a872fa;
-  --color-primary-300: #632abb;
+  --color-primary-200: #8b5cf6; /* changed as figma */
+  --color-primary-300: #7c3aed; /* changed as figma */
 
   /* Secondary Colors */
   --color-secondary-100: oklch(0.718 0.177 351.174 / 0.4); /* #dc49a6 40% */

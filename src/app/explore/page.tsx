@@ -189,6 +189,9 @@ const Home = () => {
   // Progress bar drag state
   const [isDragging, setIsDragging] = useState(false);
 
+  // Volume drag state for showing the dot on active
+  const [isVolumeDragging, setIsVolumeDragging] = useState(false);
+
   // Progress bar drag handlers
   const handleProgressUpdate = useCallback(
     (clientX: number) => {
@@ -312,6 +315,9 @@ const Home = () => {
     const audio = audioRef.current;
     if (!audio) return;
 
+    let playTimeout: NodeJS.Timeout | null = null;
+    let pauseTimeout: NodeJS.Timeout | null = null;
+
     const onTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
       setProgress(duration ? (audio.currentTime / duration) * 100 : 0);
@@ -319,8 +325,14 @@ const Home = () => {
     const onLoadedMetadata = () => {
       setDuration(audio.duration);
     };
-    const onPlay = () => setPlayerState('playing');
-    const onPause = () => setPlayerState('paused');
+    const onPlay = () => {
+      if (playTimeout) clearTimeout(playTimeout);
+      playTimeout = setTimeout(() => setPlayerState('playing'), 500);
+    };
+    const onPause = () => {
+      if (pauseTimeout) clearTimeout(pauseTimeout);
+      pauseTimeout = setTimeout(() => setPlayerState('paused'), 500);
+    };
     const onEnded = () => {
       if (repeatMode === 'one') {
         audio.currentTime = 0;
@@ -358,6 +370,8 @@ const Home = () => {
       audio.removeEventListener('play', onPlay);
       audio.removeEventListener('pause', onPause);
       audio.removeEventListener('ended', onEnded);
+      if (playTimeout) clearTimeout(playTimeout);
+      if (pauseTimeout) clearTimeout(pauseTimeout);
     };
   }, [repeatMode, isShuffle, currentTrackIndex, duration, playlist.length]);
 
@@ -454,7 +468,7 @@ const Home = () => {
             }}
           >
             {/* Album Artwork */}
-            <div className='flex items-start gap-16 mb-10'>
+            <div className='flex items-center gap-16 mb-10'>
               <motion.div
                 className='w-80 h-80 sm:w-120 sm:h-120 rounded-sm sm:rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center relative overflow-hidden'
                 animate={{
@@ -564,12 +578,13 @@ const Home = () => {
                   className={
                     `cursor-pointer w-36 h-36 flex items-center justify-center rounded-lg transition-colors ` +
                     (isShuffle
-                      ? 'text-primary-200 bg-neutral-900'
+                      ? 'text-primary-300 bg-neutral-800'
                       : 'text-neutral-400 hover:text-white hover:bg-neutral-800')
                   }
                   onClick={() => setIsShuffle((prev) => !prev)}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  transition={{ type: 'spring', stiffness: 1000, damping: 20 }}
                 >
                   <Shuffle className='w-20 h-20' />
                 </motion.button>
@@ -583,6 +598,7 @@ const Home = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleSkipBack}
+                  transition={{ type: 'spring', stiffness: 1000, damping: 20 }}
                 >
                   <SkipBack className='w-20 h-20' />
                 </motion.button>
@@ -597,10 +613,10 @@ const Home = () => {
                   className='cursor-pointer w-56 h-56 rounded-full flex items-center justify-center text-white disabled:opacity-50'
                   style={{
                     backgroundColor:
-                      playerState === 'loading' ? '#717680' : '#632abb',
+                      playerState === 'loading' ? '#717680' : '#7c3aed',
                   }}
                   animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  transition={{ type: 'spring', stiffness: 1000, damping: 20 }}
                   onClick={togglePlayPause}
                   disabled={playerState === 'loading'}
                   whileHover={{ scale: playerState !== 'loading' ? 1.05 : 1 }}
@@ -632,7 +648,7 @@ const Home = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                       >
-                        <Play className='w-20 h-20 ml-4' />
+                        <Play className='w-20 h-20' />
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -649,6 +665,7 @@ const Home = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleSkipForward}
+                  transition={{ type: 'spring', stiffness: 1000, damping: 20 }}
                 >
                   <SkipForward className='w-20 h-20' />
                 </motion.button>
@@ -667,7 +684,7 @@ const Home = () => {
                   className={
                     `cursor-pointer w-36 h-36 flex items-center justify-center rounded-lg transition-colors ` +
                     (repeatMode !== 'none'
-                      ? 'text-primary-200 bg-neutral-900'
+                      ? 'text-primary-300 bg-neutral-800'
                       : 'text-neutral-400 hover:text-white hover:bg-neutral-800')
                   }
                   onClick={() => {
@@ -686,6 +703,7 @@ const Home = () => {
                   }}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  transition={{ type: 'spring', stiffness: 1000, damping: 20 }}
                 >
                   {repeatMode === 'one' ? (
                     <Repeat1 className='w-20 h-20' />
@@ -698,12 +716,12 @@ const Home = () => {
             </div>
 
             {/* Volume Control */}
-            <div className='flex items-center gap-12'>
-              <div className='relative group'>
+            <div className='flex items-center gap-4 h-20'>
+              <div className='relative flex items-center group h-full'>
                 <button
                   type='button'
                   onClick={handleMuteToggle}
-                  className='focus:outline-none cursor-pointer'
+                  className='focus:outline-none cursor-pointer flex items-center h-full'
                 >
                   {isMuted || volume === 0 ? (
                     <VolumeX className='w-20 h-20 text-neutral-400' />
@@ -715,18 +733,20 @@ const Home = () => {
                   {isMuted || volume === 0 ? 'Unmute' : 'Mute'}
                 </Tooltip>
               </div>
-              <div className='flex-1 relative group'>
-                <div className='w-full h-4 bg-neutral-800 rounded-full overflow-hidden'>
+              <div className='flex-1 relative group h-full flex items-center'>
+                <div className='w-full h-4 bg-neutral-800 rounded-full overflow-hidden flex items-center'>
                   <motion.div
-                    className='h-full rounded-full bg-neutral-400 group-hover:bg-primary-200 transition-colors duration-200'
+                    className='h-full rounded-full bg-[#717680] group-hover:bg-primary-300 transition-colors duration-200'
                     style={{ width: `${volume}%` }}
                   />
-                  <div
-                    className='absolute top-1/2 -translate-y-1/2 h-8 w-8 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 -translate-x-1/2'
-                    style={{
-                      left: `${volume}%`,
-                    }}
-                  />
+                  {isVolumeDragging && (
+                    <div
+                      className='absolute top-1/2 -translate-y-1/2 h-8 w-8 bg-white rounded-full opacity-100 transition-opacity duration-200 -translate-x-1/2'
+                      style={{
+                        left: `${volume}%`,
+                      }}
+                    />
+                  )}
                 </div>
                 <input
                   type='range'
@@ -735,6 +755,11 @@ const Home = () => {
                   value={volume}
                   onChange={(e) => handleVolumeChange(Number(e.target.value))}
                   className='absolute inset-0 w-full h-full opacity-0 cursor-pointer'
+                  onMouseDown={() => setIsVolumeDragging(true)}
+                  onMouseUp={() => setIsVolumeDragging(false)}
+                  onMouseLeave={() => setIsVolumeDragging(false)}
+                  onTouchStart={() => setIsVolumeDragging(true)}
+                  onTouchEnd={() => setIsVolumeDragging(false)}
                 />
               </div>
             </div>
